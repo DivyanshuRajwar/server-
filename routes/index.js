@@ -136,8 +136,17 @@ router.post("/submit-student-data", async (req, res) => {
     if (!name || !rollNo || !classId || !subjectCode || !formattedDate) {
       return res.status(400).json({ message: "Missing required fields" });
     }
+    const existingAttendance = await Attendance.findOne({
+      TeacherId: teacherDataStorage.teacherId,
+      ClassId: classId,
+      RollNo: rollNo,
+      Date: formattedDate,
+    });
 
-    const studentData = { name, rollNo, classId, subjectCode, formattedDate };
+    if (existingAttendance) {
+      return res.status(409).json({ message: "Attendance already submitted" });
+    }
+    // const studentData = { name, rollNo, classId, subjectCode, formattedDate };
 
     const submitAttendance = new Attendance({
       Name: name,
