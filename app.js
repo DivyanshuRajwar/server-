@@ -9,7 +9,7 @@ var usersRouter = require('./routes/users');
 const cors = require('cors');
 var app = express();
 app.use(cors({
-  origin: 'https://server-vpgh.onrender.com/' ;
+  origin: 'https://server-vpgh.onrender.com/'
 }));
 connectDB();
 // view engine setup
