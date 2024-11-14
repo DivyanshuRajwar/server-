@@ -4,8 +4,8 @@ const Attendance = require("../models/Attendance.js");
 const Teacher = require("../models/teacher");
 
 let studentData = {};
-let teacherDataStorage = {};
 const bcrypt = require("bcrypt");
+
 const cors = require("cors");
 /* GET home page. */
 router.get("/", function (req, res) {
@@ -17,7 +17,7 @@ router.post("/teacher-signup-form", async function (req, res) {
   try {
     const { firstName, lastName, username, teacherId, dob, email, password } =
       req.body;
-
+      
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -83,38 +83,45 @@ router.get("/teacher-data", async function (req, res) {
 });
 //attendance data from the teacher
 let attendanceSessions = {};
+let teacherDataStorage = {};
 router.post("/submit-teacher-data", async (req, res) => {
   try {
     const { classId, subject, teacherId, formattedDate } = req.body;
 
+    // Store teacher data in global storage for reference in student route
     teacherDataStorage = { classId, subject, teacherId, formattedDate };
 
     const durationInMinutes = 1;
-
     const endTime = new Date(Date.now() + durationInMinutes * 60000);
-    console.log(endTime)
+
+    // Store attendance session details for the class ID
     attendanceSessions[classId] = {
       subject,
       teacherId,
       endTime,
     };
 
+    console.log("Attendance session started:", { classId, endTime });
     res.status(200).json({ message: "Attendance session started", endTime });
-    console.log("This is teacher Data ", teacherDataStorage);
   } catch (error) {
-    res.json({ message: "Error storing teacher data" });
+    console.error("Error storing teacher data:", error);
+    res.status(500).json({ message: "Error storing teacher data" });
   }
 });
 router.post("/submit-student-data", async (req, res) => {
   try {
     const { name, rollNo, classId, subjectCode, formattedDate } = req.body;
+
     const session = attendanceSessions[classId];
 
+    // Check if the session exists
     if (!session) {
       return res.status(404).json({ error: "Attendance session not found" });
     }
 
+    // Check if the session has expired
     if (new Date() > session.endTime) {
+      delete attendanceSessions[classId]; // Clear expired session
       return res.status(403).json({ error: "Attendance session has expired" });
     }
 
@@ -125,34 +132,31 @@ router.post("/submit-student-data", async (req, res) => {
       subjectCode,
       formattedDate,
     });
-    console.log("Teacher data storage:", teacherDataStorage);
-
-    // Validate required fields
+    
     if (!name || !rollNo || !classId || !subjectCode || !formattedDate) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
     const studentData = { name, rollNo, classId, subjectCode, formattedDate };
 
-    // Create new Attendance record
     const submitAttendance = new Attendance({
       Name: name,
       RollNo: rollNo,
       ClassId: classId,
       Subject: subjectCode,
       TeacherId: teacherDataStorage.teacherId,
-      Date: teacherDataStorage.Date || formattedDate,
+      Date: formattedDate,
     });
 
-    // Save attendance record to database
     await submitAttendance.save();
     console.log("Student data stored successfully:", studentData);
-    res.json({ message: "Student data stored successfully" });
+    res.status(200).json({ message: "Student data stored successfully" });
   } catch (error) {
     console.error("Error storing student data:", error);
     res.status(500).json({ message: "Error storing student data" });
   }
 });
+
 //get student attendance
 router.get("/get-attendance", async (req, res) => {
   try {
