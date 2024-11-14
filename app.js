@@ -8,7 +8,9 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 const cors = require('cors');
 var app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'https://server-vpgh.onrender.com/' ;
+}));
 connectDB();
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
