@@ -91,7 +91,7 @@ router.post("/submit-teacher-data", async (req, res) => {
     // Store teacher data in global storage for reference in student route
     teacherDataStorage = { classId, subject, teacherId, formattedDate };
 
-    const durationInMinutes = 1;
+    const durationInMinutes = 4;//set in min
     const endTime = new Date(Date.now() + durationInMinutes * 60000);
 
     // Store attendance session details for the class ID
@@ -121,7 +121,7 @@ router.post("/submit-student-data", async (req, res) => {
 
     // Check if the session has expired
     if (new Date() > session.endTime) {
-      delete attendanceSessions[classId]; // Clear expired session
+      delete attendanceSessions[classId]; 
       return res.status(403).json({ error: "Attendance session has expired" });
     }
 
