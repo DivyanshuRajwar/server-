@@ -2,7 +2,7 @@ var express = require("express");
 var router = express.Router();
 const Attendance = require("../models/Attendance.js");
 const Teacher = require("../models/teacher");
-
+const Student = require("../models/Student.js")
 let studentData = {};
 const bcrypt = require("bcrypt");
 
@@ -198,6 +198,55 @@ router.get("/get-attendance", async (req, res) => {
   }
 });
 
+//Student (student-registration)
+router.post('/student-registration',async (req,res)=>{
+  try{
+    const {studentId,
+    name,
+    course,
+    password} = req.body
+    console.log(name,course,password,studentId)
+    const hashedPassword = await bcrypt.hash(password,10);
+    const userData = new Student({
+      fullName:name,
+      studentId:studentId,
+      course:course,
+      password:hashedPassword
+    })
+    await userData.save();
+    res
+    .status(200)
+    .json({ message: "Student registered successfully!", userData });
+  }
+  catch(error){
+    console.error("Error during signup:", error);
+    res.status(500).json({ message: "Error registering teacher", error });
+  }
+})
+//student (Login )
+router.post('/student-login',async (req,res)=>{
+  const {studentId,password} = req.body;
+  try{
+    const student = await Student.findOne({
+      studentId:studentId
+    });
+    if(!student){
+      return res
+        .status(400)
+        .json({ message: "Invalid studentId or password" });
+    }
+    const isPasswordMatch = await bcrypt.compare(password,student.password);
+    if(!isPasswordMatch){
+      return res
+        .status(400)
+        .json({ message: "Invalid studentId or password" });
+    }
+    const { password: _, ...userData } = student._doc;
+    res.status(200).json({ message: "Login successful", userData });
+    console.log(userData);
+  }catch(error){
 
+  }
 
+})
 module.exports = router;
