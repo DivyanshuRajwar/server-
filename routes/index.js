@@ -86,17 +86,17 @@ let attendanceSessions = {};
 let teacherDataStorage = {};
 router.post("/submit-teacher-data", async (req, res) => {
   try {
-    const { classId, subject, teacherId, formattedDate } = req.body;
+    const { classId, subjectCode, teacherId, formattedDate } = req.body;
 
     // Store teacher data in global storage for reference in student route
-    teacherDataStorage = { classId, subject, teacherId, formattedDate };
+    teacherDataStorage = { classId, subjectCode, teacherId, formattedDate };
 
     const durationInMinutes = 4;//set in min
     const endTime = new Date(Date.now() + durationInMinutes * 60000);
 
     // Store attendance session details for the class ID
     attendanceSessions[classId] = {
-      subject,
+      subjectCode,
       teacherId,
       endTime,
     };
@@ -110,7 +110,7 @@ router.post("/submit-teacher-data", async (req, res) => {
 });
 router.post("/submit-student-data", async (req, res) => {
   try {
-    const { name, rollNo, classId, subjectCode, formattedDate } = req.body;
+    const { name, rollNo, classId, subjectCode, formattedDate,studentId } = req.body;
 
     const session = attendanceSessions[classId];
 
@@ -139,6 +139,7 @@ router.post("/submit-student-data", async (req, res) => {
     const existingAttendance = await Attendance.findOne({
       TeacherId: teacherDataStorage.teacherId,
       ClassId: classId,
+      subjectCode: subjectCode,
       RollNo: rollNo,
       Date: formattedDate,
     });
@@ -149,10 +150,11 @@ router.post("/submit-student-data", async (req, res) => {
     // const studentData = { name, rollNo, classId, subjectCode, formattedDate };
 
     const submitAttendance = new Attendance({
-      Name: name,
+      fullName: name,
       RollNo: rollNo,
+      studentId:studentId,
       ClassId: classId,
-      Subject: subjectCode,
+      subjectCode: subjectCode,
       TeacherId: teacherDataStorage.teacherId,
       Date: formattedDate,
     });
@@ -182,7 +184,7 @@ router.get("/get-attendance", async (req, res) => {
     const studentAttendanceData = await Attendance.find({
       Date: date,
       ClassId: classId,
-      Subject: subject,
+      subjectCode: subject,
     });
 
     if (studentAttendanceData.length > 0) {
@@ -195,6 +197,27 @@ router.get("/get-attendance", async (req, res) => {
     res
       .status(500)
       .json({ message: "An error occurred while fetching attendance data" });
+  }
+});
+//get one student all attendance
+router.get("/get-today-attendance", async (req, res) => {
+  try {
+    const { studentId } = req.query;
+
+    if (!studentId) {
+      return res.status(400).json({ message: "StudentId is required." });
+    }
+
+    const studentAttendanceData = await Attendance.find({ studentId });
+
+    if (studentAttendanceData.length > 0) {
+      res.status(200).json(studentAttendanceData);
+    } else {
+      res.status(404).json({ message: "No attendance data found" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "An error occurred while fetching attendance data." });
   }
 });
 
