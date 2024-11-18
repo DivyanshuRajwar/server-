@@ -272,4 +272,33 @@ router.post('/student-login',async (req,res)=>{
   }
 
 })
+
+//device datat save
+router.post('/save-device', async (req, res) => {
+  const { studentId, deviceId } = req.body;
+
+  try {
+    // Check if the device is already registered
+    const existingDevice = await DeviceModel.findOne({ deviceId });
+
+    if (existingDevice) {
+      if (existingDevice.studentId !== studentId) {
+        return res.status(400).json({ message: 'This device is linked to another student.' });
+      }
+      return res.status(200).json({ message: 'Device already registered for this student.' });
+    }
+
+    // Save new device
+    await DeviceModel.create({
+      studentId,
+      deviceId,
+      lastLogin: new Date(),
+    });
+
+    res.status(200).json({ message: 'Device registered successfully.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to register device. Try again later.' });
+  }
+});
 module.exports = router;
