@@ -1,18 +1,16 @@
 const mongoose = require('mongoose');
 
-// Define the schema for the device
 const DeviceSchema = new mongoose.Schema({
   studentId: {
-    type: mongoose.Schema.Types.studentId, // Keeps consistency with MongoDB's native ObjectId
-    ref: 'Student', // Reference to the Student collection
+    type: String, 
+    ref: 'Students',
     required: true,
   },
   deviceId: {
-    type: String, // Unique identifier for the device (e.g., fingerprintJS ID)
+    type: String, 
     required: true,
-    unique: true, // Ensures no duplicate devices
+    unique: true, 
   },
 });
 
-// Export the model
 module.exports = mongoose.model('Device', DeviceSchema);
