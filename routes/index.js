@@ -67,7 +67,7 @@ router.post("/teacher-login-form", async (req, res) => {
         .status(400)
         .json({ message: "Invalid username/email or password" });
     }
-    const { password: _, ...userData } = teacher._doc;
+  const { password: _, ...userData } = teacher._doc;
     res.status(200).json({ message: "Login successful", userData });
     console.log(userData);
   } catch (error) {
@@ -85,6 +85,7 @@ router.get("/teacher-data", async function (req, res) {
 //attendance data from the teacher
 let attendanceSessions = {};
 let teacherDataStorage = {};
+//start attendance
 router.post("/submit-teacher-data", async (req, res) => {
   try {
     const { classId, subjectCode, teacherId, formattedDate } = req.body;
@@ -109,6 +110,18 @@ router.post("/submit-teacher-data", async (req, res) => {
     res.status(500).json({ message: "Error storing teacher data" });
   }
 });
+//end attendance
+router.post('/end-attendance', async (req, res) => {
+  const { classId } = req.body;
+  const session = attendanceSessions[classId];
+  if (session) {
+    session.endTime = new Date(); 
+    res.send("end of the attendance");
+  } else {
+    res.status(404).json({ error: "Class ID not found or session does not exist." });
+  }
+});
+
 router.post("/submit-student-data", async (req, res) => {
   try {
     const { name, rollNo, classId, subjectCode, formattedDate,studentId } = req.body;
