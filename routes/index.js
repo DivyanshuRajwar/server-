@@ -287,55 +287,7 @@ router.post('/student-login',async (req,res)=>{
 
 })
 
-//device data save
-router.post('/save-device', async (req, res) => {
-  const { studentId, deviceId } = req.body;
 
-  try {
-    // Check if the device is already registered
-    const existingDevice = await DeviceModel.findOne({ deviceId });
 
-    if (existingDevice) {
-      // Compare ObjectId using `toString()` or `equals`
-      if (existingDevice.studentId.toString() !== studentId) {
-        return res.status(400).json({ message: 'This device is linked to another student.' });
-      }
-      return res.status(200).json({ message: 'Device already registered for this student.' });
-    }
-
-    // Save new device
-    const newDevice = new DeviceModel({
-      studentId,
-      deviceId,
-    });
-    await newDevice.save();
-
-    res.status(200).json({ message: 'Device registered successfully.' });
-  } catch (error) {
-    console.error('Error saving device:', error);
-    res.status(500).json({ message: 'Failed to register device. Try again later.' });
-  }
-});
-//remove device data
-router.post('/remove-device', async (req, res) => {
-  const { studentId, deviceId } = req.body;
-
-  try {
-    console.log("Received payload:", req.body);
-
-    // Attempt to find and delete the device
-    const device = await DeviceModel.findOneAndDelete({ studentId, deviceId });
-    console.log("Query result:", device);
-
-    if (!device) {
-      return res.status(404).json({ message: 'Device not found.' });
-    }
-
-    res.status(200).json({ message: 'Device removed successfully.' });
-  } catch (error) {
-    console.error("Error while removing device:", error);
-    res.status(500).json({ message: 'Failed to remove device. Try again later.' });
-  }
-});
 
 module.exports = router;
