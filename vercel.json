@@ -10,7 +10,9 @@
   "routes": [
     {
       "src": "/(.*)", 
-      "dest": "/bin/www.js"
+      "dest": "/routes/index.js"
     }
   ]
 }
+
+
