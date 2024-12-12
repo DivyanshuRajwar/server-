@@ -124,8 +124,9 @@ router.post('/end-attendance', async (req, res) => {
 
 router.post("/submit-student-data", async (req, res) => {
   try {
-    const { name, rollNo, classId, subjectCode, formattedDate,studentId } = req.body;
+    const { name, rollNo, classId, subjectCode, formattedDate, studentId } = req.body;
 
+    // Fetch the session for the given class
     const session = attendanceSessions[classId];
 
     // Check if the session exists
@@ -135,21 +136,27 @@ router.post("/submit-student-data", async (req, res) => {
 
     // Check if the session has expired
     if (new Date() > session.endTime) {
-      delete attendanceSessions[classId]; 
+      delete attendanceSessions[classId]; // Remove the expired session
       return res.status(403).json({ error: "Attendance session has expired" });
     }
 
-    console.log("Received student data:", {
-      name,
-      rollNo,
-      classId,
-      subjectCode,
-      formattedDate,
-    });
-    
+    // Validate required fields
     if (!name || !rollNo || !classId || !subjectCode || !formattedDate) {
       return res.status(400).json({ message: "Missing required fields" });
     }
+
+    // Validate subjectCode, formattedDate, and classId match teacher data
+    if (
+      subjectCode !== teacherDataStorage.subjectCode ||
+      formattedDate !== teacherDataStorage.formattedDate ||
+      classId !== teacherDataStorage.classId
+    ) {
+      return res.status(406).json({
+        message: "Invalid classId, subjectCode, or formattedDate. Please check your inputs."
+      });
+    }
+
+    // Check if attendance already exists
     const existingAttendance = await Attendance.findOne({
       TeacherId: teacherDataStorage.teacherId,
       ClassId: classId,
@@ -159,30 +166,34 @@ router.post("/submit-student-data", async (req, res) => {
     });
 
     if (existingAttendance) {
-      return res.status(409).json({ message: "Attendance already submitted" });
+      return res.status(409).json({ message: "Attendance already submitted for this student." });
     }
-    // const studentData = { name, rollNo, classId, subjectCode, formattedDate };
+    
 
+    // Create new attendance entry
     const submitAttendance = new Attendance({
       fullName: name,
       RollNo: rollNo,
-      studentId:studentId,
+      studentId: studentId,
       ClassId: classId,
       subjectCode: subjectCode,
       TeacherId: teacherDataStorage.teacherId,
       Date: formattedDate,
     });
 
+    // Save the attendance data to the database
     await submitAttendance.save();
-    console.log("Student data stored successfully:", studentData);
-    res.status(200).json({ message: "Student data stored successfully" });
+
+    // Respond with success
+    res.status(200).json({ message: "Student attendance submitted successfully." });
+    
   } catch (error) {
     console.error("Error storing student data:", error);
-    res.status(500).json({ message: "Error storing student data" });
+    res.status(500).json({ message: "An error occurred while storing student data." });
   }
 });
 
-//get student attendance
+//get student attendance(teachers)
 router.get("/get-attendance", async (req, res) => {
   try {
     const { date, classId, subject } = req.query;
@@ -213,27 +224,40 @@ router.get("/get-attendance", async (req, res) => {
       .json({ message: "An error occurred while fetching attendance data" });
   }
 });
-//get one student all attendance
+//get one student all attendance(students)
 router.get("/get-today-attendance", async (req, res) => {
   try {
-    const { studentId } = req.query;
+    const { studentId } = req.query;  // Change this to req.query
+    console.log("The student id is ", studentId);
 
     if (!studentId) {
       return res.status(400).json({ message: "StudentId is required." });
     }
 
-    const studentAttendanceData = await Attendance.find({ studentId });
+    // Get today's date and format it as DDMMYYYY (e.g., 12122024)
+    const date = new Date();
+    const formattedDate = `${date.getDate()}${date.getMonth() + 1}${date.getFullYear()}`;
+
+    console.log("Today's Formatted Date:", formattedDate); // Log the formatted date
+
+    // Fetch attendance records for today only based on the formattedDate
+    const studentAttendanceData = await Attendance.find({
+      studentId,
+      Date:formattedDate
+    });
 
     if (studentAttendanceData.length > 0) {
       res.status(200).json(studentAttendanceData);
     } else {
-      res.status(404).json({ message: "No attendance data found" });
+      res.status(404).json({ message: "No attendance data found for today." });
     }
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching attendance data:", error);
     res.status(500).json({ message: "An error occurred while fetching attendance data." });
   }
 });
+
+
 
 //Student (student-registration)
 router.post('/student-registration',async (req,res)=>{
